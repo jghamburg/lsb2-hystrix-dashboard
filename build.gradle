@@ -80,6 +80,10 @@ jib {
     format = 'OCI'
   }
 }
+
+configurations {
+	all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
+}
 // tag::code[]
 dependencies {
 	compile('org.springframework.cloud:spring-cloud-starter-netflix-hystrix-dashboard')
