@@ -1,18 +1,18 @@
 buildscript {
 	ext {
-		springCloudVersion = 'Finchley.RELEASE'
+		springCloudVersion = 'Greenwich.RELEASE'
 	}
 }
 
 plugins {
-	id 'org.springframework.boot' version '2.0.4.RELEASE' apply true
+	id 'org.springframework.boot' version '2.1.2.RELEASE' apply true
 	// tag::gradle-git[]
 	id 'com.gorylenko.gradle-git-properties' version '1.4.17'
 	// end::gradle-git[]
 	id 'idea'
 	id 'java-gradle-plugin'
 	id 'com.avast.gradle.docker-compose' version '0.8.4'
-	id 'com.google.cloud.tools.jib' version '0.9.8'
+	id 'com.google.cloud.tools.jib' version '1.0.0'
 }
 
 apply plugin: 'io.spring.dependency-management'
@@ -66,14 +66,14 @@ composeUp.dependsOn composeBuild
 
 jib {
   from {
-    image = 'docker.obc.ov.otto.de/base/openjdk:8-jre-alpine'
+    image = 'openjdk:8-jre-alpine'
   }
   to {
-    image = "docker.obc.ov.otto.de/jib/lsb2-hystrix-server:local"
+    image = 'jghamburg/lsb2-hystrix-server:local'
 //    credHelper = 'osxkeychain'
   }
   container {
-    jvmFlags = ['-Djava.security.egd=file:/dev/./urandom', '-Xms512m', '-Xdebug', "-Dspring.profiles.active=local"]
+    jvmFlags = ['-Djava.security.egd=file:/dev/./urandom', '-Xms512m', '-Xdebug', '-Dspring.profiles.active=local']
     mainClass = 'com.greglturnquist.learningspringboot.LearningSpringBootHystrixDashboard'
     args = []
     ports = ['8080']
