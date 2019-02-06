@@ -1,28 +1,42 @@
-buildscript {
-	ext {
-		springCloudVersion = 'Greenwich.RELEASE'
-	}
-}
-
 plugins {
-	id 'org.springframework.boot' version '2.1.2.RELEASE' apply true
-	// tag::gradle-git[]
-	id 'com.gorylenko.gradle-git-properties' version '1.4.17'
-	// end::gradle-git[]
-	id 'idea'
-	id 'java-gradle-plugin'
-	id 'com.avast.gradle.docker-compose' version '0.8.4'
-	id 'com.google.cloud.tools.jib' version '1.0.0'
+  id 'org.springframework.boot' version '2.1.2.RELEASE' apply true
+  id 'java'
+  id 'idea'
+//  id 'com.gorylenko.gradle-git-properties' version '2.0.0'
+  id 'com.avast.gradle.docker-compose' version '0.8.13'
+  id 'com.google.cloud.tools.jib' version '1.0.0'
 }
 
 apply plugin: 'io.spring.dependency-management'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+ext {
+  set('springCloudVersion', 'Greenwich.RELEASE')
+  set('activeSpringProfiles', 'local')
+}
+
+group = 'com.gregturnquist.learningspringboot'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
 
 repositories {
-	jcenter()
+  mavenCentral()
+  maven { url 'https://repo.spring.io/milestone' }
 }
+
+dependencies {
+  implementation 'org.springframework.boot:spring-boot-starter-security'
+  implementation 'org.springframework.cloud:spring-cloud-starter-config'
+  implementation 'org.springframework.cloud:spring-cloud-starter-netflix-hystrix-dashboard'
+}
+
+dependencyManagement {
+  imports {
+    mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+  }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 jar {
 	baseName = 'learning-spring-boot-hystrix-server'
@@ -73,27 +87,10 @@ jib {
 //    credHelper = 'osxkeychain'
   }
   container {
-    jvmFlags = ['-Djava.security.egd=file:/dev/./urandom', '-Xms512m', '-Xdebug', '-Dspring.profiles.active=local']
+    jvmFlags = ['-Djava.security.egd=file:/dev/./urandom', '-Xms512m', '-Xdebug', "-Dspring.profiles.active=${activeSpringProfiles}"]
     mainClass = 'com.greglturnquist.learningspringboot.LearningSpringBootHystrixDashboard'
     args = []
     ports = ['8080']
     format = 'OCI'
   }
 }
-
-configurations {
-	all*.exclude group: 'ch.qos.logback', module: 'logback-classic'
-}
-// tag::code[]
-dependencies {
-	compile('org.springframework.cloud:spring-cloud-starter-netflix-hystrix-dashboard')
-	compile('org.springframework.cloud:spring-cloud-starter-config')
-	compile('org.yaml:snakeyaml')
-}
-
-dependencyManagement {
-	imports {
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-	}
-}
-// end::code[]

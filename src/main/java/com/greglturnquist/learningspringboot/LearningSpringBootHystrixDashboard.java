@@ -18,6 +18,13 @@ package com.greglturnquist.learningspringboot;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.netflix.hystrix.dashboard.EnableHystrixDashboard;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 /**
  * @author Greg Turnquist
@@ -31,5 +38,30 @@ public class LearningSpringBootHystrixDashboard {
 		SpringApplication.run(
 			LearningSpringBootHystrixDashboard.class);
 	}
+
+  @Bean
+  UserDetailsService userDetailsService() {
+    return new InMemoryUserDetailsManager(
+        User.withUsername("user")
+            .password("{noop}password")
+            .roles("USER").build());
+  }
+
+  @Configuration
+  protected static class SecurityPolicy extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+      http
+          .authorizeRequests()
+          .antMatchers("/actuator/**").permitAll()
+          .anyRequest().authenticated()
+          .and()
+          .httpBasic()
+          .and()
+          .csrf().disable();
+    }
+  }
+
 }
 // end::code[]
