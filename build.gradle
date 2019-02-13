@@ -1,13 +1,13 @@
 plugins {
   id 'org.springframework.boot' version '2.1.2.RELEASE' apply true
+  id "io.spring.dependency-management" version "1.0.6.RELEASE"
+  id 'io.franzbecker.gradle-lombok' version '2.0'
   id 'java'
   id 'idea'
-//  id 'com.gorylenko.gradle-git-properties' version '2.0.0'
+  id 'com.gorylenko.gradle-git-properties' version '2.0.0'
   id 'com.avast.gradle.docker-compose' version '0.8.13'
   id 'com.google.cloud.tools.jib' version '1.0.0'
 }
-
-apply plugin: 'io.spring.dependency-management'
 
 ext {
   set('springCloudVersion', 'Greenwich.RELEASE')
@@ -16,7 +16,6 @@ ext {
 
 group = 'com.gregturnquist.learningspringboot'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '1.8'
 
 repositories {
   mavenCentral()
@@ -38,9 +37,19 @@ dependencyManagement {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-jar {
-	baseName = 'learning-spring-boot-hystrix-server'
-	version = '0.0.1-SNAPSHOT'
+lombok {
+  version = '1.18.4'
+  sha256 = ""
+}
+
+repositories {
+  jcenter()
+}
+
+bootJar {
+  baseName = 'lsb2-hystrix-dashboard'
+  version = ''
+  excludeDevtools = false
 }
 /*
  * docker-compose plugin configuration.
