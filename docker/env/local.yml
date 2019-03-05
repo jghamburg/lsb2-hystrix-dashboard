@@ -7,7 +7,7 @@ services:
     labels:
       lsb2.template.description: "Hystrix Server for local environment"
       lsb2.version: "local"
-    image: "hystrix-server:local"
+    image: "jghamburg/lsb2-hystrix-dashboard:local"
     build:
       context: ../..
       dockerfile: ./docker/Dockerfile

@@ -23,6 +23,7 @@ repositories {
 }
 
 dependencies {
+  implementation 'org.springframework.boot:spring-boot-starter-actuator'
   implementation 'org.springframework.boot:spring-boot-starter-security'
   implementation 'org.springframework.cloud:spring-cloud-starter-config'
   implementation 'org.springframework.cloud:spring-cloud-starter-netflix-hystrix-dashboard'
@@ -86,13 +87,14 @@ dockerCompose {
 }
 composeBuild.dependsOn bootJar
 composeUp.dependsOn composeBuild
+composePush.dependsOn composeBuild
 
 jib {
   from {
     image = 'openjdk:8-jre-alpine'
   }
   to {
-    image = 'jghamburg/lsb2-hystrix-server:local'
+    image = 'jghamburg/lsb2-hystrix-dashboard:local'
 //    credHelper = 'osxkeychain'
   }
   container {
