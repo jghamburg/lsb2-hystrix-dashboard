@@ -14,9 +14,10 @@ services:
       args:
         JAR_FILE: ./build/libs/lsb2-hystrix-dashboard.jar
     ports:
-      - "7979:7979" # web port
+      - "7979:8080" # web port
     environment:
-      PROFILE: "local"
+      PROFILE: "default"
+      PORT: 8080
     networks:
       - learn-ms-network
 

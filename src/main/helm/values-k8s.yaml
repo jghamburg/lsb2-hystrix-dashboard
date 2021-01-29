@@ -1,0 +1,14 @@
+# Default values for lsb2EurekaServer.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+app:
+  port: 8080
+  profile: local
+  configserver:
+    uri: 'http://lsb2-config-server'
+replicaCount: 1
+
+image:
+  repository: jghamburg/lsb2-eureka-server
+  tag: local
+  pullPolicy: IfNotPresent

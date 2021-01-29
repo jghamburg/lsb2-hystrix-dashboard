@@ -1,17 +1,32 @@
 plugins {
-  id 'org.springframework.boot' version '2.1.2.RELEASE' apply true
-  id "io.spring.dependency-management" version "1.0.6.RELEASE"
-  id 'io.franzbecker.gradle-lombok' version '2.0'
+  id 'org.springframework.boot' version '2.4.2' apply true
+  id "io.spring.dependency-management" version "1.0.11.RELEASE"
   id 'java'
   id 'idea'
-  id 'com.gorylenko.gradle-git-properties' version '2.0.0'
-  id 'com.avast.gradle.docker-compose' version '0.8.13'
-  id 'com.google.cloud.tools.jib' version '1.0.0'
+  id 'io.franzbecker.gradle-lombok' version '3.1.0'
+  id 'com.gorylenko.gradle-git-properties' version '2.1.0'
+
+  id 'com.palantir.docker' version '0.22.1'
+  id 'com.palantir.docker-run' version '0.22.1'
+  id 'com.avast.gradle.docker-compose' version '0.14.0'
+  id 'com.google.cloud.tools.jib' version '2.7.1'
+
+  id 'org.unbroken-dome.helm' version '1.4.0'
+  id 'org.unbroken-dome.helm-publish' version '1.4.0'
+  id 'org.unbroken-dome.helm-releases' version '1.4.0'
+
+  id 'se.patrikerdes.use-latest-versions' version '0.2.15'
+  id 'com.github.ben-manes.versions' version '0.36.0'
+
+  id 'maven-publish'
+  id "org.owasp.dependencycheck" version "5.2.4"
+  id 'io.qameta.allure' version '2.8.1'
+  id 'org.unbroken-dome.test-sets' version '2.1.1'
 }
 
 ext {
-  set('springCloudVersion', 'Greenwich.RELEASE')
   set('activeSpringProfiles', 'local')
+  set('chartRepoUrl', 'http://chartmuseum.local.svc.cluster.local')
 }
 
 group = 'com.gregturnquist.learningspringboot'
@@ -23,23 +38,18 @@ repositories {
 }
 
 dependencies {
+  implementation platform('org.springframework.cloud:spring-cloud-dependencies:2020.0.1')
   implementation 'org.springframework.boot:spring-boot-starter-actuator'
   implementation 'org.springframework.boot:spring-boot-starter-security'
   implementation 'org.springframework.cloud:spring-cloud-starter-config'
   implementation 'org.springframework.cloud:spring-cloud-starter-netflix-hystrix-dashboard'
 }
 
-dependencyManagement {
-  imports {
-    mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-  }
-}
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 11
+targetCompatibility = 11
 
 lombok {
-  version = '1.18.4'
+  version = '1.18.10'
   sha256 = ""
 }
 
@@ -47,11 +57,109 @@ repositories {
   jcenter()
 }
 
+springBoot {
+    buildInfo {
+        properties {
+            artifact = "${rootProject.name}"
+            group = "${project.group}"
+            name = "${rootProject.name}"
+            version = "${project.version}"
+        }
+    }
+}
+
 bootJar {
   baseName = 'lsb2-hystrix-dashboard'
-  version = ''
+  layered()
   excludeDevtools = false
+} 
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId 'com.gregturnquist.learningspringboot'
+            from components.java
+        }
+    }
 }
+
+tasks.jib.dependsOn tasks.check
+jib {
+    from {
+        image = 'gcr.io/distroless/java-debian10'
+    }
+    to {
+      image = 'jghamburg/lsb2-config-server'
+      tags = ["latest", project.version]
+      credHelper = 'osxkeychain'
+    }
+    extraDirectories {
+        paths = file('./ssl')
+    }
+    container {
+      jvmFlags = ['-Djava.security.egd=file:/dev/./urandom', '-Xms256m', '-Xdebug']
+      mainClass = 'com.greglturnquist.learningspringboot.LearningSpringBootConfigServer'
+      args = []
+      ports = ['8888']
+    }
+}
+helm {
+    // The global lint configuration applies to all charts
+    lint {
+        // treat linter warnings as errors (failing the build)
+        strict = true
+    }
+
+    publishing {
+        repositories {
+            chartMuseum('localcharts') {
+                url = uri('http://chartmuseum-chartmuseum.default.svc.cluster.local:8080')
+            }
+        }
+    }
+
+    filtering {
+        values.put 'imageRepository', jib.to.image
+        values.put 'imageTag', jib.to.tags.first()
+        values.put 'appVersion', "${project.version}"
+    }
+
+    charts {
+        main {
+          chartVersion = "${project.version}"
+          sourceDir = file('src/main/helm')
+        }
+    }
+
+    releases {
+
+        hystrixdashboard {
+            valuesDir 'src/main/helm'
+            forTarget('local') {
+                from chart('main')
+                installDependsOn 'jibDockerBuild'
+                values.put 'imageTag', 'latest'
+                values.put 'appVersion', "${project.version}"
+                values.put 'rootUser.password', 'secret'
+            }
+            forTarget('nonlive') {
+                from chart('main')
+                installDependsOn 'jib'
+            }
+        }
+    }
+    releaseTargets {
+        local {
+//            kubeContext = 'docker-for-desktop'
+        }
+        nonlive {
+//            kubeContext = 'aws'
+//            atomic = true
+        }
+    }
+
+}
+
 /*
  * docker-compose plugin configuration.
  * Details on https://github.com/avast/gradle-docker-compose-plugin
@@ -91,7 +199,7 @@ composePush.dependsOn composeBuild
 
 jib {
   from {
-    image = 'openjdk:8-jre-alpine'
+    image = 'azul/zulu-openjdk-alpine:11.0.6'
   }
   to {
     image = 'jghamburg/lsb2-hystrix-dashboard:local'
@@ -102,6 +210,5 @@ jib {
     mainClass = 'com.greglturnquist.learningspringboot.LearningSpringBootHystrixDashboard'
     args = []
     ports = ['8080']
-    format = 'OCI'
   }
 }
